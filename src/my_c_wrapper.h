@@ -26,16 +26,19 @@
 extern "C" {
 #endif
 
-	typedef void* hMakeBox;
+	typedef void* hBRepBuilderAPI_MakeShape; // opaque handle that can be the childof BRepBuilderAPI_MakeShape
 	typedef void* hTopoDS_Shape; // opaque handle that owns shape + cached mesh buffers
 
+	// BRepBuilderAPI_MakeShape functions
+	OCPSt int cxxIsDone(hBRepBuilderAPI_MakeShape handle); // backward-compatible alias
+
 	// Box functions
-	OCPSt hMakeBox cxxBoxNew(double dx, double dy, double dz);
-	OCPSt void cxxMakeBoxDelete(hMakeBox handle);
-	OCPSt hTopoDS_Shape cxxBoxShape(hMakeBox handle);
+	OCPSt hBRepBuilderAPI_MakeShape cxxBoxNew(double dx, double dy, double dz);
+	OCPSt void cxxMakeBoxDelete(hBRepBuilderAPI_MakeShape handle);
+
+	// TopoDS_Shape functions
 	OCPSt void cxxShapeDelete(hTopoDS_Shape handle);
-	OCPSt int cxxMakeBoxIsDone(hMakeBox handle);
-	OCPSt int IsDone(hMakeBox handle); // backward-compatible alias
+	OCPSt hTopoDS_Shape cxxToShape(hBRepBuilderAPI_MakeShape handle);
 
 	// Tessellation + mesh access (call cxxTessellate before reading buffers)
 	OCPSt void cxxTessellate(hTopoDS_Shape shape, double deflection);

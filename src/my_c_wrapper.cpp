@@ -34,23 +34,23 @@ struct OCCShape
 };
 
 extern "C" {
-	hMakeBox cxxBoxNew(double dx, double dy, double dz)
+	hBRepBuilderAPI_MakeShape cxxBoxNew(double dx, double dy, double dz)
 	{
 		BRepPrimAPI_MakeBox* makeBoxHandle = new BRepPrimAPI_MakeBox(dx, dy, dz);
 		// Ensure the builder runs now so IsDone reflects reality before Shape() is requested.
 		makeBoxHandle->Build();
-		return static_cast<hMakeBox>(makeBoxHandle);
+		return static_cast<hBRepBuilderAPI_MakeShape>(makeBoxHandle);
 	}
 
-	void cxxMakeBoxDelete(hMakeBox handle)
+	void cxxMakeBoxDelete(hBRepBuilderAPI_MakeShape handle)
 	{
 		BRepPrimAPI_MakeBox* makeBoxHandle = static_cast<BRepPrimAPI_MakeBox*>(handle);
 		delete makeBoxHandle;
 	}
 
-	hTopoDS_Shape cxxBoxShape(hMakeBox handle)
+	hTopoDS_Shape cxxToShape(hBRepBuilderAPI_MakeShape handle)
 	{
-		BRepPrimAPI_MakeBox* makeBoxHandle = static_cast<BRepPrimAPI_MakeBox*>(handle);
+		BRepBuilderAPI_MakeShape* makeBoxHandle = static_cast<BRepBuilderAPI_MakeShape*>(handle);
 		OCCShape* out = new OCCShape();
 		out->shape = makeBoxHandle->Shape();
 		return static_cast<hTopoDS_Shape>(out);
@@ -62,15 +62,10 @@ extern "C" {
 		delete shapeHandle;
 	}
 
-	int cxxMakeBoxIsDone(hMakeBox handle)
+	int cxxIsDone(hBRepBuilderAPI_MakeShape handle)
 	{
-		BRepPrimAPI_MakeBox* makeBoxHandle = static_cast<BRepPrimAPI_MakeBox*>(handle);
-		return makeBoxHandle && makeBoxHandle->IsDone() ? 1 : 0;
-	}
-
-	int IsDone(hMakeBox handle)
-	{
-		return cxxMakeBoxIsDone(handle);
+		BRepBuilderAPI_MakeShape* makeShapeHandle = static_cast<BRepBuilderAPI_MakeShape*>(handle);
+		return makeShapeHandle && makeShapeHandle->IsDone() ? 1 : 0;
 	}
 
 	void cxxTessellate(hTopoDS_Shape shape, double deflection)
