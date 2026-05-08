@@ -8,6 +8,7 @@
 
 // OpenCASCADE includes
 #include <BRepPrimAPI_MakeBox.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepLib_ToolTriangulatedShape.hxx>
@@ -211,5 +212,16 @@ extern "C" {
 	#else
 			return 0;
 	#endif
+	}
+
+	hBRepBuilderAPI_MakeShape cxxCylinderNew(double radius, double height) {
+		BRepPrimAPI_MakeCylinder* makeCylinderHandle = new BRepPrimAPI_MakeCylinder(radius, height);
+		makeCylinderHandle->Build();
+		return static_cast<hBRepBuilderAPI_MakeShape>(makeCylinderHandle);
+	}
+
+	void cxxMakeCylinderDelete(hBRepBuilderAPI_MakeShape handle) {
+		BRepPrimAPI_MakeCylinder* makeCylinderHandle = static_cast<BRepPrimAPI_MakeCylinder*>(handle);
+		delete makeCylinderHandle;
 	}
 }

@@ -36,6 +36,10 @@ extern "C" {
 	OCPSt hBRepBuilderAPI_MakeShape cxxBoxNew(double dx, double dy, double dz);
 	OCPSt void cxxMakeBoxDelete(hBRepBuilderAPI_MakeShape handle);
 
+	// Cylinder functions
+	OCPSt hBRepBuilderAPI_MakeShape cxxCylinderNew(double radius, double height);
+	OCPSt void cxxMakeCylinderDelete(hBRepBuilderAPI_MakeShape handle);
+
 	// TopoDS_Shape functions
 	OCPSt void cxxShapeDelete(hTopoDS_Shape handle);
 	OCPSt hTopoDS_Shape cxxToShape(hBRepBuilderAPI_MakeShape handle);
