@@ -33,6 +33,8 @@ target_sources(my_occt_c_wrapper
 target_link_libraries(my_occt_c_wrapper PRIVATE
     TKPrim
     TKMesh
+    TKTopAlgo
+    TKBool
 )
 
 # FIXED: 'PRIVATE_HEADER' is an invalid scope. Changed to 'PRIVATE'.

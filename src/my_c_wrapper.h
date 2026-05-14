@@ -52,6 +52,9 @@ extern "C" {
 	OCPSt void cxxGetAllNormals(hTopoDS_Shape shape, double* buffer);
 	OCPSt void cxxGetAllTriangles(hTopoDS_Shape shape, int* buffer);
 
+	// Boolean Operations
+	OCPSt hTopoDS_Shape cxxCut(hTopoDS_Shape& hShape1, hTopoDS_Shape& hShape2);
+
 	OCPSt void cxxMemoryCheckpoint();
 	OCPSt void cxxDumpMemoryDifference();
 	OCPSt int cxxHasMemoryDifference();

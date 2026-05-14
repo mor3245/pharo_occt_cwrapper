@@ -21,6 +21,7 @@
 #include <TopAbs_ShapeEnum.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
+#include <BrepAlgoAPI_Cut.hxx>
 
 #include <vector>
 
@@ -223,5 +224,26 @@ extern "C" {
 	void cxxMakeCylinderDelete(hBRepBuilderAPI_MakeShape handle) {
 		BRepPrimAPI_MakeCylinder* makeCylinderHandle = static_cast<BRepPrimAPI_MakeCylinder*>(handle);
 		delete makeCylinderHandle;
+	}
+
+	hTopoDS_Shape cxxCut(hTopoDS_Shape& hShape1, hTopoDS_Shape& hShape2) {
+		OCCShape* shape1 = static_cast<OCCShape*>(hShape1);
+		OCCShape* shape2 = static_cast<OCCShape*>(hShape2);
+
+		if (!shape1 || !shape2) {
+			return nullptr;
+		}
+
+		BRepAlgoAPI_Cut cut(shape1->shape, shape2->shape);
+		cut.Build();
+
+		if (!cut.IsDone()) {
+			return nullptr;
+		}
+
+		OCCShape* out = new OCCShape();
+		out->shape = cut.Shape();
+
+		return static_cast<hTopoDS_Shape>(out);
 	}
 }
