@@ -102,6 +102,34 @@ extern "C" {
     OCPSt hWodenShape cxxToShape(hBRepBuilderAPI_MakeShape handle);
 
     /* -------------------------------------------------------------------------
+       Shape transforms
+       ------------------------------------------------------------------------- */
+
+       /* Applies a translation to the underlying TopoDS_Shape.
+          Clears cached tessellation buffers because the mesh is now stale. */
+        OCPSt void cxxTranslateShape(hWodenShape shape, double x, double y, double z);
+
+        /* Applies Euler rotations in degrees around X, Y, then Z, about the shape origin.
+           Clears cached tessellation buffers because the mesh is now stale. */
+        OCPSt void cxxRotateShapeDegrees(hWodenShape shape, double xDegrees, double yDegrees, double zDegrees);
+
+        /* Applies non-uniform scale around the shape origin.
+           Clears cached tessellation buffers because the mesh is now stale. */
+        OCPSt void cxxScaleShape(hWodenShape shape, double sx, double sy, double sz);
+
+        /* Applies Euler rotations in degrees around X, Y, then Z, about the shape center.
+           Clears cached tessellation buffers because the mesh is now stale.*/
+        OCPSt void cxxRotateShapeDegreesAboutPoint(
+            hWodenShape shape,
+            double xDegrees,
+            double yDegrees,
+            double zDegrees,
+            double centerX,
+            double centerY,
+            double centerZ
+        );
+
+    /* -------------------------------------------------------------------------
        Tessellation — must be called before reading any mesh buffers
        ------------------------------------------------------------------------- */
 

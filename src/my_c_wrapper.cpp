@@ -9,6 +9,11 @@
 #include "my_c_wrapper.h"
 
 // OpenCASCADE includes
+#include <BRepBuilderAPI_Transform.hxx>
+#include <gp_Ax1.hxx>
+#include <gp_Pnt.hxx>
+#include <gp_Trsf.hxx>
+#include <gp_Vec.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepLib_ToolTriangulatedShape.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
@@ -23,7 +28,6 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
 #include <gp_Dir.hxx>
-#include <gp_Pnt.hxx>
 
 #include <exception>
 #include <memory>
@@ -178,6 +182,157 @@ extern "C" {
     void cxxFreeShape(hWodenShape handle)
     {
         cxxShapeDelete(handle);
+    }
+
+    static void clearCachedMesh(WodenShape* s)
+    {
+        if (!s)
+            return;
+
+        s->vertices.clear();
+        s->normals.clear();
+        s->triangles.clear();
+    }
+
+    void cxxTranslateShape(hWodenShape shape, double x, double y, double z)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s)
+            return;
+
+        try
+        {
+            gp_Trsf trsf;
+            trsf.SetTranslation(gp_Vec(x, y, z));
+
+            BRepBuilderAPI_Transform transformer(s->shape, trsf, true);
+            transformer.Build();
+
+            if (!transformer.IsDone())
+                return;
+
+            s->shape = transformer.Shape();
+            clearCachedMesh(s);
+        }
+        catch (...)
+        {
+            return;
+        }
+    }
+
+    void cxxRotateShapeDegrees(hWodenShape shape, double xDegrees, double yDegrees, double zDegrees)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s)
+            return;
+
+        try
+        {
+            const double pi = 3.14159265358979323846;
+            const double xRadians = xDegrees * pi / 180.0;
+            const double yRadians = yDegrees * pi / 180.0;
+            const double zRadians = zDegrees * pi / 180.0;
+
+            gp_Trsf rx;
+            gp_Trsf ry;
+            gp_Trsf rz;
+
+            rx.SetRotation(gp_Ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(1.0, 0.0, 0.0)), xRadians);
+            ry.SetRotation(gp_Ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 1.0, 0.0)), yRadians);
+            rz.SetRotation(gp_Ax1(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 0.0, 1.0)), zRadians);
+
+            gp_Trsf trsf = rz * ry * rx;
+
+            BRepBuilderAPI_Transform transformer(s->shape, trsf, true);
+            transformer.Build();
+
+            if (!transformer.IsDone())
+                return;
+
+            s->shape = transformer.Shape();
+            clearCachedMesh(s);
+        }
+        catch (...)
+        {
+            return;
+        }
+    }
+
+    void cxxRotateShapeDegreesAboutPoint(
+        hWodenShape shape,
+        double xDegrees,
+        double yDegrees,
+        double zDegrees,
+        double centerX,
+        double centerY,
+        double centerZ)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s)
+            return;
+
+        try
+        {
+            const double pi = 3.14159265358979323846;
+            const double xRadians = xDegrees * pi / 180.0;
+            const double yRadians = yDegrees * pi / 180.0;
+            const double zRadians = zDegrees * pi / 180.0;
+
+            const gp_Pnt center(centerX, centerY, centerZ);
+
+            gp_Trsf rx;
+            gp_Trsf ry;
+            gp_Trsf rz;
+
+            rx.SetRotation(gp_Ax1(center, gp_Dir(1.0, 0.0, 0.0)), xRadians);
+            ry.SetRotation(gp_Ax1(center, gp_Dir(0.0, 1.0, 0.0)), yRadians);
+            rz.SetRotation(gp_Ax1(center, gp_Dir(0.0, 0.0, 1.0)), zRadians);
+
+            gp_Trsf trsf = rz * ry * rx;
+
+            BRepBuilderAPI_Transform transformer(s->shape, trsf, true);
+            transformer.Build();
+
+            if (!transformer.IsDone())
+                return;
+
+            s->shape = transformer.Shape();
+            clearCachedMesh(s);
+        }
+        catch (...)
+        {
+            return;
+        }
+    }
+
+    void cxxScaleShape(hWodenShape shape, double sx, double sy, double sz)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s)
+            return;
+
+        try
+        {
+            gp_Trsf trsf;
+            trsf.SetValues(
+                sx, 0.0, 0.0, 0.0,
+                0.0, sy, 0.0, 0.0,
+                0.0, 0.0, sz, 0.0
+            );
+
+            BRepBuilderAPI_Transform transformer(s->shape, trsf, true);
+            transformer.Build();
+
+            if (!transformer.IsDone())
+                return;
+
+            s->shape = transformer.Shape();
+            clearCachedMesh(s);
+        }
+        catch (...)
+        {
+            return;
+        }
     }
 
     /* -------------------------------------------------------------------------
