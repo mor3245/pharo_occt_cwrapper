@@ -101,6 +101,18 @@ extern "C" {
        Caller must free the returned handle with cxxShapeDelete / cxxFreeShape. */
     OCPSt hWodenShape cxxToShape(hBRepBuilderAPI_MakeShape handle);
 
+    /* Returns the number of bytes required to store the shape in OCCT BREP format.
+       The count excludes any trailing null terminator. Returns 0 on failure. */
+    OCPSt int cxxExportBRepSize(hWodenShape shape);
+
+    /* Serializes the shape to OCCT BREP format into caller-owned memory.
+       buffer must be at least cxxExportBRepSize(shape) bytes. Returns bytes written. */
+    OCPSt int cxxExportBRep(hWodenShape shape, void* buffer, int bufferLength);
+
+    /* Recreates a WodenShape from OCCT BREP bytes previously produced by cxxExportBRep.
+       Caller must free the returned handle with cxxShapeDelete / cxxFreeShape. */
+    OCPSt hWodenShape cxxImportBRep(const void* buffer, int bufferLength);
+
     /* -------------------------------------------------------------------------
        Shape transforms
        ------------------------------------------------------------------------- */

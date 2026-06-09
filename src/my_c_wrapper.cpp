@@ -15,6 +15,8 @@
 #include <gp_Trsf.hxx>
 #include <gp_Vec.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
+#include <BRepTools.hxx>
+#include <BRep_Builder.hxx>
 #include <BRepLib_ToolTriangulatedShape.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
@@ -30,6 +32,8 @@
 #include <gp_Dir.hxx>
 
 #include <exception>
+#include <cstring>
+#include <sstream>
 #include <memory>
 #include <vector>
 
@@ -182,6 +186,76 @@ extern "C" {
     void cxxFreeShape(hWodenShape handle)
     {
         cxxShapeDelete(handle);
+    }
+
+    static bool shapeToBRepString(WodenShape* s, std::string& out)
+    {
+        if (!s)
+            return false;
+
+        try
+        {
+            std::ostringstream stream;
+            BRepTools::Write(s->shape, stream);
+            out = stream.str();
+            return !out.empty();
+        }
+        catch (const Standard_Failure&) { return false; }
+        catch (const std::exception&) { return false; }
+        catch (...) { return false; }
+    }
+
+    int cxxExportBRepSize(hWodenShape shape)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        std::string brep;
+        if (!shapeToBRepString(s, brep))
+            return 0;
+
+        return static_cast<int>(brep.size());
+    }
+
+    int cxxExportBRep(hWodenShape shape, void* buffer, int bufferLength)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!buffer || bufferLength <= 0)
+            return 0;
+
+        std::string brep;
+        if (!shapeToBRepString(s, brep))
+            return 0;
+
+        if (static_cast<size_t>(bufferLength) < brep.size())
+            return 0;
+
+        std::memcpy(buffer, brep.data(), brep.size());
+        return static_cast<int>(brep.size());
+    }
+
+    hWodenShape cxxImportBRep(const void* buffer, int bufferLength)
+    {
+        if (!buffer || bufferLength <= 0)
+            return nullptr;
+
+        try
+        {
+            const char* bytes = static_cast<const char*>(buffer);
+            std::string brep(bytes, bytes + bufferLength);
+            std::istringstream stream(brep);
+
+            BRep_Builder builder;
+            TopoDS_Shape shape;
+            BRepTools::Read(shape, stream, builder);
+            if (shape.IsNull())
+                return nullptr;
+
+            std::unique_ptr<WodenShape> out(new WodenShape());
+            out->shape = shape;
+            return out.release();
+        }
+        catch (const Standard_Failure&) { return nullptr; }
+        catch (const std::exception&) { return nullptr; }
+        catch (...) { return nullptr; }
     }
 
     static void clearCachedMesh(WodenShape* s)
