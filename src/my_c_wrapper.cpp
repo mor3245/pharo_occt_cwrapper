@@ -9,6 +9,7 @@
 #include "my_c_wrapper.h"
 
 // OpenCASCADE includes
+#include <BRepBuilderAPI_Copy.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <gp_Ax1.hxx>
 #include <gp_Pnt.hxx>
@@ -25,8 +26,10 @@
 #include <Poly_Triangulation.hxx>
 #include <TopAbs_Orientation.hxx>
 #include <TopAbs_ShapeEnum.hxx>
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopLoc_Location.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Face.hxx>
 #include <gp_Dir.hxx>
@@ -186,6 +189,62 @@ extern "C" {
     void cxxFreeShape(hWodenShape handle)
     {
         cxxShapeDelete(handle);
+    }
+
+    static bool mapSolids(WodenShape* s, TopTools_IndexedMapOfShape& solids)
+    {
+        if (!s || s->shape.IsNull())
+            return false;
+
+        try
+        {
+            TopExp::MapShapes(s->shape, TopAbs_SOLID, solids);
+            return true;
+        }
+        catch (const Standard_Failure&) { return false; }
+        catch (const std::exception&) { return false; }
+        catch (...) { return false; }
+    }
+
+    int cxxSolidCount(hWodenShape shape)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        TopTools_IndexedMapOfShape solids;
+
+        if (!mapSolids(s, solids))
+            return 0;
+
+        return solids.Extent();
+    }
+
+    hWodenShape cxxSolidAt(hWodenShape shape, int index)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        TopTools_IndexedMapOfShape solids;
+
+        if (index < 0)
+            return nullptr;
+
+        if (!mapSolids(s, solids))
+            return nullptr;
+
+        if (index >= solids.Extent())
+            return nullptr;
+
+        try
+        {
+            BRepBuilderAPI_Copy copier(solids.FindKey(index + 1));
+            copier.Perform(solids.FindKey(index + 1));
+            if (!copier.IsDone())
+                return nullptr;
+
+            std::unique_ptr<WodenShape> out(new WodenShape());
+            out->shape = copier.Shape();
+            return out.release();
+        }
+        catch (const Standard_Failure&) { return nullptr; }
+        catch (const std::exception&) { return nullptr; }
+        catch (...) { return nullptr; }
     }
 
     static bool shapeToBRepString(WodenShape* s, std::string& out)

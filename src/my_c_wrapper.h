@@ -101,6 +101,15 @@ extern "C" {
        Caller must free the returned handle with cxxShapeDelete / cxxFreeShape. */
     OCPSt hWodenShape cxxToShape(hBRepBuilderAPI_MakeShape handle);
 
+    /* Returns the number of unique TopAbs_SOLID subshapes contained in shape.
+   This is used after boolean operations to expose disconnected CAD solids separately. */
+    OCPSt int cxxSolidCount(hWodenShape shape);
+
+    /* Returns a copy of the zero-based solid at index from shape.
+       Caller owns the returned handle and must free it with cxxShapeDelete / cxxFreeShape.
+       Returns nullptr if shape is null, index is out of range, or extraction fails. */
+    OCPSt hWodenShape cxxSolidAt(hWodenShape shape, int index);
+
     /* Returns the number of bytes required to store the shape in OCCT BREP format.
        The count excludes any trailing null terminator. Returns 0 on failure. */
     OCPSt int cxxExportBRepSize(hWodenShape shape);
