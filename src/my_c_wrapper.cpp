@@ -191,14 +191,24 @@ extern "C" {
         cxxShapeDelete(handle);
     }
 
-    static bool mapSolids(WodenShape* s, TopTools_IndexedMapOfShape& solids)
+    static bool isSupportedSubshapeType(int shapeType)
     {
-        if (!s || s->shape.IsNull())
+        return shapeType == TopAbs_VERTEX
+            || shapeType == TopAbs_EDGE
+            || shapeType == TopAbs_WIRE
+            || shapeType == TopAbs_FACE
+            || shapeType == TopAbs_SHELL
+            || shapeType == TopAbs_SOLID;
+    }
+
+    static bool mapSubshapes(WodenShape* s, int shapeType, TopTools_IndexedMapOfShape& subshapes)
+    {
+        if (!s || s->shape.IsNull() || !isSupportedSubshapeType(shapeType))
             return false;
 
         try
         {
-            TopExp::MapShapes(s->shape, TopAbs_SOLID, solids);
+            TopExp::MapShapes(s->shape, static_cast<TopAbs_ShapeEnum>(shapeType), subshapes);
             return true;
         }
         catch (const Standard_Failure&) { return false; }
@@ -208,33 +218,44 @@ extern "C" {
 
     int cxxSolidCount(hWodenShape shape)
     {
-        WodenShape* s = static_cast<WodenShape*>(shape);
-        TopTools_IndexedMapOfShape solids;
-
-        if (!mapSolids(s, solids))
-            return 0;
-
-        return solids.Extent();
+        return cxxSubshapeCount(shape, TopAbs_SOLID);
     }
 
     hWodenShape cxxSolidAt(hWodenShape shape, int index)
     {
+        return cxxSubshapeAt(shape, TopAbs_SOLID, index);
+    }
+
+    int cxxSubshapeCount(hWodenShape shape, int shapeType)
+    {
         WodenShape* s = static_cast<WodenShape*>(shape);
-        TopTools_IndexedMapOfShape solids;
+        TopTools_IndexedMapOfShape subshapes;
+
+        if (!mapSubshapes(s, shapeType, subshapes))
+            return 0;
+
+        return subshapes.Extent();
+    }
+
+    hWodenShape cxxSubshapeAt(hWodenShape shape, int shapeType, int index)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        TopTools_IndexedMapOfShape subshapes;
 
         if (index < 0)
             return nullptr;
 
-        if (!mapSolids(s, solids))
+        if (!mapSubshapes(s, shapeType, subshapes))
             return nullptr;
 
-        if (index >= solids.Extent())
+        if (index >= subshapes.Extent())
             return nullptr;
 
         try
         {
-            BRepBuilderAPI_Copy copier(solids.FindKey(index + 1));
-            copier.Perform(solids.FindKey(index + 1));
+            const TopoDS_Shape& subshape = subshapes.FindKey(index + 1);
+            BRepBuilderAPI_Copy copier(subshape);
+            copier.Perform(subshape);
             if (!copier.IsDone())
                 return nullptr;
 

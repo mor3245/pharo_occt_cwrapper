@@ -110,6 +110,15 @@ extern "C" {
        Returns nullptr if shape is null, index is out of range, or extraction fails. */
     OCPSt hWodenShape cxxSolidAt(hWodenShape shape, int index);
 
+    /* Returns the number of unique subshapes of the requested TopAbs_ShapeEnum value.
+       Supported shapeType values are TopAbs_VERTEX, TopAbs_EDGE, TopAbs_WIRE,
+       TopAbs_FACE, TopAbs_SHELL, and TopAbs_SOLID. */
+    OCPSt int cxxSubshapeCount(hWodenShape shape, int shapeType);
+
+    /* Returns a copy of the zero-based subshape at index for the requested TopAbs_ShapeEnum value.
+       Caller owns the returned handle and must free it with cxxShapeDelete / cxxFreeShape. */
+    OCPSt hWodenShape cxxSubshapeAt(hWodenShape shape, int shapeType, int index);
+
     /* Returns the number of bytes required to store the shape in OCCT BREP format.
        The count excludes any trailing null terminator. Returns 0 on failure. */
     OCPSt int cxxExportBRepSize(hWodenShape shape);
