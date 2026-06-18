@@ -35,8 +35,7 @@
 #include <gp_Dir.hxx>
 
 #include <exception>
-#include <cstring>
-#include <sstream>
+#include <fstream>
 #include <memory>
 #include <vector>
 
@@ -268,60 +267,37 @@ extern "C" {
         catch (...) { return nullptr; }
     }
 
-    static bool shapeToBRepString(WodenShape* s, std::string& out)
+    int cxxWriteBRepFile(hWodenShape shape, const char* filePath)
     {
-        if (!s)
-            return false;
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s || !filePath || filePath[0] == '\0')
+            return 0;
 
         try
         {
-            std::ostringstream stream;
+            std::ofstream stream(filePath, std::ios::out | std::ios::binary | std::ios::trunc);
+            if (!stream.is_open())
+                return 0;
+
             BRepTools::Write(s->shape, stream);
-            out = stream.str();
-            return !out.empty();
+            stream.flush();
+            return stream.good() ? 1 : 0;
         }
-        catch (const Standard_Failure&) { return false; }
-        catch (const std::exception&) { return false; }
-        catch (...) { return false; }
+        catch (const Standard_Failure&) { return 0; }
+        catch (const std::exception&) { return 0; }
+        catch (...) { return 0; }
     }
 
-    int cxxExportBRepSize(hWodenShape shape)
+    hWodenShape cxxReadBRepFile(const char* filePath)
     {
-        WodenShape* s = static_cast<WodenShape*>(shape);
-        std::string brep;
-        if (!shapeToBRepString(s, brep))
-            return 0;
-
-        return static_cast<int>(brep.size());
-    }
-
-    int cxxExportBRep(hWodenShape shape, void* buffer, int bufferLength)
-    {
-        WodenShape* s = static_cast<WodenShape*>(shape);
-        if (!buffer || bufferLength <= 0)
-            return 0;
-
-        std::string brep;
-        if (!shapeToBRepString(s, brep))
-            return 0;
-
-        if (static_cast<size_t>(bufferLength) < brep.size())
-            return 0;
-
-        std::memcpy(buffer, brep.data(), brep.size());
-        return static_cast<int>(brep.size());
-    }
-
-    hWodenShape cxxImportBRep(const void* buffer, int bufferLength)
-    {
-        if (!buffer || bufferLength <= 0)
+        if (!filePath || filePath[0] == '\0')
             return nullptr;
 
         try
         {
-            const char* bytes = static_cast<const char*>(buffer);
-            std::string brep(bytes, bytes + bufferLength);
-            std::istringstream stream(brep);
+            std::ifstream stream(filePath, std::ios::in | std::ios::binary);
+            if (!stream.is_open())
+                return nullptr;
 
             BRep_Builder builder;
             TopoDS_Shape shape;

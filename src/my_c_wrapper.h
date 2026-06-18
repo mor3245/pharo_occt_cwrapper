@@ -119,17 +119,12 @@ extern "C" {
        Caller owns the returned handle and must free it with cxxShapeDelete / cxxFreeShape. */
     OCPSt hWodenShape cxxSubshapeAt(hWodenShape shape, int shapeType, int index);
 
-    /* Returns the number of bytes required to store the shape in OCCT BREP format.
-       The count excludes any trailing null terminator. Returns 0 on failure. */
-    OCPSt int cxxExportBRepSize(hWodenShape shape);
+    /* Writes the shape to an OCCT BREP file. Returns 1 on success, 0 on failure. */
+    OCPSt int cxxWriteBRepFile(hWodenShape shape, const char* filePath);
 
-    /* Serializes the shape to OCCT BREP format into caller-owned memory.
-       buffer must be at least cxxExportBRepSize(shape) bytes. Returns bytes written. */
-    OCPSt int cxxExportBRep(hWodenShape shape, void* buffer, int bufferLength);
-
-    /* Recreates a WodenShape from OCCT BREP bytes previously produced by cxxExportBRep.
+    /* Recreates a WodenShape from an OCCT BREP file.
        Caller must free the returned handle with cxxShapeDelete / cxxFreeShape. */
-    OCPSt hWodenShape cxxImportBRep(const void* buffer, int bufferLength);
+    OCPSt hWodenShape cxxReadBRepFile(const char* filePath);
 
     /* -------------------------------------------------------------------------
        Shape transforms
