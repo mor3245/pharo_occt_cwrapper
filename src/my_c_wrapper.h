@@ -219,6 +219,24 @@ extern "C" {
     OCPSt int cxxGetTriangleIndexCount(hWodenShape shape);
 
     /* -------------------------------------------------------------------------
+        Edge display sampling — must be called before reading edge line buffers
+       ------------------------------------------------------------------------- */
+
+       /* Samples every topological edge into a flat line-endpoint buffer using the given deflection.
+          Each segment contributes two vertices, stored as x,y,z triples. */
+    OCPSt void cxxSampleEdges(hWodenShape shape, double deflection);
+
+    /* Returns the number of sampled line segments from the last cxxSampleEdges call. */
+    OCPSt int cxxEdgeSegmentCount(hWodenShape shape);
+
+    /* Returns a direct pointer to the sampled edge vertex buffer (x,y,z triples).
+       Returns nullptr if the shape is null or has no sampled edge vertices. */
+    OCPSt const double* cxxGetEdgeVertices(hWodenShape shape);
+
+    /* Returns the total number of doubles in the sampled edge vertex buffer. */
+    OCPSt int cxxGetEdgeVertexBufferLength(hWodenShape shape);
+
+    /* -------------------------------------------------------------------------
        Boolean operations
        ------------------------------------------------------------------------- */
 

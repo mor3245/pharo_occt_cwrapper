@@ -16,6 +16,7 @@
 #include <gp_Trsf.hxx>
 #include <gp_Vec.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
+#include <BRepAdaptor_Curve.hxx>
 #include <BRepTools.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepLib_ToolTriangulatedShape.hxx>
@@ -29,10 +30,14 @@
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopLoc_Location.hxx>
-#include <TopTools_IndexedMapOfShape.hxx>
+#include <NCollection_IndexedMap.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
+#include <TopoDS_Shape.hxx>
+#include <TopTools_ShapeMapHasher.hxx>
 #include <gp_Dir.hxx>
+#include <GCPnts_UniformDeflection.hxx>
 
 #include <exception>
 #include <fstream>
@@ -42,6 +47,8 @@
 /* Global CRT heap snapshot used by the memory-tracking helpers. */
 static _CrtMemState gMemStateStart;
 
+using WodenIndexedShapeMap = NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>;
+
 /* Internal representation of a shape together with its tessellated mesh buffers.
    All three vectors are populated (and replaced) by cxxTessellate. */
 struct WodenShape
@@ -50,6 +57,7 @@ struct WodenShape
     std::vector<double> vertices; // Flat x,y,z triples — one entry per vertex.
     std::vector<double> normals;  // Flat nx,ny,nz triples — one entry per vertex (matches vertices).
     std::vector<int>  triangles;  // Flat i0,i1,i2 triples — 0-based indices into vertices.
+    std::vector<double> edgeVertices; // Flat sampled edge line endpoints — x,y,z triples, two vertices per segment.
 };
 
 extern "C" {
@@ -200,7 +208,7 @@ extern "C" {
             || shapeType == TopAbs_SOLID;
     }
 
-    static bool mapSubshapes(WodenShape* s, int shapeType, TopTools_IndexedMapOfShape& subshapes)
+    static bool mapSubshapes(WodenShape* s, int shapeType, WodenIndexedShapeMap& subshapes)
     {
         if (!s || s->shape.IsNull() || !isSupportedSubshapeType(shapeType))
             return false;
@@ -228,7 +236,7 @@ extern "C" {
     int cxxSubshapeCount(hWodenShape shape, int shapeType)
     {
         WodenShape* s = static_cast<WodenShape*>(shape);
-        TopTools_IndexedMapOfShape subshapes;
+        WodenIndexedShapeMap subshapes;
 
         if (!mapSubshapes(s, shapeType, subshapes))
             return 0;
@@ -239,7 +247,7 @@ extern "C" {
     hWodenShape cxxSubshapeAt(hWodenShape shape, int shapeType, int index)
     {
         WodenShape* s = static_cast<WodenShape*>(shape);
-        TopTools_IndexedMapOfShape subshapes;
+        WodenIndexedShapeMap subshapes;
 
         if (index < 0)
             return nullptr;
@@ -322,6 +330,7 @@ extern "C" {
         s->vertices.clear();
         s->normals.clear();
         s->triangles.clear();
+        s->edgeVertices.clear();
     }
 
     void cxxTranslateShape(hWodenShape shape, double x, double y, double z)
@@ -682,6 +691,94 @@ extern "C" {
         WodenShape* s = static_cast<WodenShape*>(shape);
         if (!s) return 0;
         return static_cast<int>(s->triangles.size());
+    }
+
+    /* -------------------------------------------------------------------------
+       Edge display sampling
+       ------------------------------------------------------------------------- */
+
+    static void appendEdgePoint(std::vector<double>& buffer, const gp_Pnt& point)
+    {
+        buffer.push_back(point.X());
+        buffer.push_back(point.Y());
+        buffer.push_back(point.Z());
+    }
+
+    static void appendEdgeSegment(std::vector<double>& buffer, const gp_Pnt& first, const gp_Pnt& second)
+    {
+        appendEdgePoint(buffer, first);
+        appendEdgePoint(buffer, second);
+    }
+
+    void cxxSampleEdges(hWodenShape shape, double deflection)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s)
+            return;
+
+        s->edgeVertices.clear();
+
+        try
+        {
+            const double safeDeflection = deflection > 0.0 ? deflection : 0.01;
+            WodenIndexedShapeMap edges;
+            TopExp::MapShapes(s->shape, TopAbs_EDGE, edges);
+
+            for (int edgeIndex = 1; edgeIndex <= edges.Extent(); ++edgeIndex)
+            {
+                const TopoDS_Edge edge = TopoDS::Edge(edges.FindKey(edgeIndex));
+                if (edge.IsNull())
+                    continue;
+
+                BRepAdaptor_Curve curve(edge);
+                const double firstParameter = curve.FirstParameter();
+                const double lastParameter = curve.LastParameter();
+
+                GCPnts_UniformDeflection sampler(curve, safeDeflection);
+                if (sampler.IsDone() && sampler.NbPoints() >= 2)
+                {
+                    gp_Pnt previous = sampler.Value(1);
+                    for (int index = 2; index <= sampler.NbPoints(); ++index)
+                    {
+                        gp_Pnt current = sampler.Value(index);
+                        appendEdgeSegment(s->edgeVertices, previous, current);
+                        previous = current;
+                    }
+                }
+                else
+                {
+                    appendEdgeSegment(
+                        s->edgeVertices,
+                        curve.Value(firstParameter),
+                        curve.Value(lastParameter));
+                }
+            }
+        }
+        catch (...)
+        {
+            s->edgeVertices.clear();
+        }
+    }
+
+    int cxxEdgeSegmentCount(hWodenShape shape)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s) return 0;
+        return static_cast<int>(s->edgeVertices.size() / 6);
+    }
+
+    const double* cxxGetEdgeVertices(hWodenShape shape)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s || s->edgeVertices.empty()) return nullptr;
+        return s->edgeVertices.data();
+    }
+
+    int cxxGetEdgeVertexBufferLength(hWodenShape shape)
+    {
+        WodenShape* s = static_cast<WodenShape*>(shape);
+        if (!s) return 0;
+        return static_cast<int>(s->edgeVertices.size());
     }
 
     /* -------------------------------------------------------------------------
