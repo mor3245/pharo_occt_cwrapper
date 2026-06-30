@@ -26,15 +26,14 @@ Current supported runtime target:
 
 - Windows x64
 
-Other platforms should be treated as source-build targets until release bundles
-are provided for them.
+Other platforms should be treated as source-build targets until precompiled
+runtime archives are provided for them.
 
-## Installing A Release Bundle
+## Using The Built Wrapper In Pharo
 
-Most developers should not build OCCT themselves. They should download a release
-bundle that matches their platform.
+A precompiled runtime archive for quick setup.
 
-Expected release bundle layout:
+Expected runtime archive layout:
 
 ```text
 bin/
@@ -50,7 +49,7 @@ README-runtime.md
 
 To use the wrapper with Pharo on Windows:
 
-1. Download the latest `windows-x64` bundle from GitHub Releases.
+1. Download or build a matching `windows-x64` runtime archive.
 2. Extract the archive.
 3. Copy everything from `bin/` into the Pharo image directory, beside the
    `.image` file.
@@ -64,8 +63,8 @@ runtime DLLs beside it is missing.
 
 ## Building From Source
 
-Build from source only when changing the native wrapper or producing a new
-release bundle.
+Build from source when changing the native wrapper or recreating the development
+runtime DLLs.
 
 ### Prerequisites
 
@@ -615,7 +614,7 @@ same output directory. Verify that the directory contains both
 
 ### 8. Smoke Test The Output
 
-Before publishing or copying the DLL into a Pharo image, verify the output
+Before copying the DLL into a Pharo image, verify the output
 directory contains:
 
 ```text
@@ -633,30 +632,6 @@ TKernel.dll
 
 The exact OCCT DLL set can change with OCCT version and linker settings. If
 Pharo cannot load `my_occt_c_wrapper.dll`, check missing dependent DLLs first.
-
-## Publishing A Release
-
-For each published binary release:
-
-1. Build the wrapper in `Release` configuration.
-2. Create a clean bundle directory with `bin/`, `include/`, and `LICENSES/`.
-3. Copy `my_occt_c_wrapper.dll` and required OCCT runtime DLLs into `bin/`.
-4. Copy `src/my_c_wrapper.h` into `include/`.
-5. Include this project's license and OCCT license files in `LICENSES/`.
-6. Name the archive with the wrapper version and platform, for example:
-
-```text
-my-occt-c-wrapper-v0.1.0-windows-x64.zip
-```
-
-Release notes should state:
-
-- wrapper version
-- target platform
-- OCCT version used
-- compiler/toolchain used
-- whether the build is Debug or Release
-- ABI changes since the previous release
 
 ## ABI Guidelines
 
@@ -681,10 +656,9 @@ Debug builds expose memory-checking helpers guarded by `_DEBUG`:
 - `cxxHasMemoryDifference`
 
 These functions are not part of the Release ABI. Do not call them from Pharo
-code that must work with release bundles.
+code that must work with normal runtime archives.
 
 ## License Notes
 
-This project links against Open CASCADE Technology. Release bundles must include
-the relevant OCCT license files and should clearly state the OCCT version used
-to produce the binaries.
+This project links against Open CASCADE Technology. Shared runtime archives
+should clearly state the OCCT version used to produce the binaries.
