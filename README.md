@@ -608,30 +608,57 @@ The same build can be run from a developer command prompt:
 cmake --build C:\dev\opencascade\tmp\project_my_c_wrapper_build_vc143_x64 --config Debug
 ```
 
-CMake also copies the runtime DLLs reported by `$<TARGET_RUNTIME_DLLS>` into the
-same output directory. Verify that the directory contains both
-`my_occt_c_wrapper.dll` and the OCCT DLLs needed at runtime before packaging.
+The wrapper build output is the source for `my_occt_c_wrapper.dll`. The OCCT
+runtime DLLs should be copied from the OCCT install directory created in step 5.
 
-### 8. Smoke Test The Output
+### 8. Copy The Built DLLs Into A Pharo Image
 
-Before copying the DLL into a Pharo image, verify the output
-directory contains:
+For example, if Pharo Launcher shows an image named
+`pharo_opencascade_integrationX`, use `Show in folder` to open the destination
+directory:
+
+![Pharo Launcher context menu with Show in folder selected](docs/images/pharo-launcher-show-in-folder.png)
+
+Step by step:
+
+1. Open Pharo Launcher.
+2. Select the image that will run Pharo OCCT, for example
+   `pharo_opencascade_integrationX`.
+3. Right-click the image and choose `Show in folder`.
+
+For example, if Pharo Launcher opens this image directory:
 
 ```text
-my_occt_c_wrapper.dll
-TKBRep.dll
-TKBool.dll
-TKGeomBase.dll
-TKGeomAlgo.dll
-TKMath.dll
-TKMesh.dll
-TKPrim.dll
-TKTopAlgo.dll
-TKernel.dll
+C:\Users\morgan\Documents\Pharo\images\pharo_opencascade_integrationX
 ```
 
-The exact OCCT DLL set can change with OCCT version and linker settings. If
-Pharo cannot load `my_occt_c_wrapper.dll`, check missing dependent DLLs first.
+copy the built wrapper DLL and the OCCT runtime files into that directory.
+
+Copy `my_occt_c_wrapper.dll` from:
+
+```text
+C:\dev\opencascade\tmp\project_my_c_wrapper_build_vc143_x64\Debug
+```
+
+and copy all `.dll` files and `.pdb` files from the OCCT runtime directory:
+
+```text
+C:\dev\opencascade\occt_install\v8_0_0_rc5\win64\vc14\bind
+```
+
+After copying, the Pharo image directory should contain the image files, the
+wrapper DLL, and the OCCT runtime DLLs together:
+
+```text
+C:\Users\morgan\Documents\Pharo\images\pharo_opencascade_integrationX\
+  pharo_opencascade_integrationX.image
+  pharo_opencascade_integrationX.changes
+  my_occt_c_wrapper.dll
+  TKBRep.dll
+  TKPrim.dll
+  TKernel.dll
+  ...
+```
 
 ## ABI Guidelines
 
